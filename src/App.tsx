@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { mockInterpretation } from './mockData'
 import type { AIInterpretation, Consideration, ConsiderationCategory, DecisionJourneyState, Interpretation } from './types'
 
@@ -24,6 +24,63 @@ const categoryLabels: Record<ConsiderationCategory, string> = {
   pullingToward: 'Pulling you toward it',
   holdingBack: 'Holding you back',
   fears: "You're afraid that...",
+}
+
+const journeySteps = [
+  'Name the decision',
+  'Read the reflection',
+  'Weigh what matters',
+  'Pressure-test fear',
+  'Explore the upside',
+  'See the whole picture',
+]
+
+function JourneyRail({ current }: { current: number }) {
+  return <aside className="journey-rail" aria-label="Decision journey">
+    <p className="rail-label">Your journey</p>
+    <ol>
+      {journeySteps.map((step, index) => {
+        const number = index + 1
+        return <li key={step} className={number === current ? 'current' : number < current ? 'complete' : ''} aria-current={number === current ? 'step' : undefined}>
+          <span className="step-number">{String(number).padStart(2, '0')}</span>
+          <span>{step}</span>
+        </li>
+      })}
+    </ol>
+  </aside>
+}
+
+function ThoughtLine({ step }: { step: number }) {
+  return <div className={`thought-line thought-line-${step}`} aria-hidden="true">
+    <svg viewBox="0 0 360 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path className="line-primary" pathLength="1" d="M18 152C48 152 43 85 79 94C110 102 69 177 113 185C160 193 121 61 174 61C226 61 178 181 232 177C282 174 252 96 298 90C326 86 327 119 344 119" />
+      <path className="line-secondary" pathLength="1" d="M18 123C50 123 63 147 86 137C116 123 91 82 126 85C161 88 141 146 180 145C221 144 202 101 239 101C278 101 293 135 344 132" />
+      <path className="line-resolve" pathLength="1" d="M18 150C86 150 96 112 158 112H344" />
+    </svg>
+    <span>Thoughts, becoming clearer</span>
+  </div>
+}
+
+function TypewriterHeadline() {
+  const text = 'What are you trying to figure out?'
+  const [visible, setVisible] = useState('')
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion) {
+      setVisible(text)
+      return
+    }
+    let index = 0
+    const timer = window.setInterval(() => {
+      index += 1
+      setVisible(text.slice(0, index))
+      if (index >= text.length) window.clearInterval(timer)
+    }, 52)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  return <h1 className="typewriter" aria-label={text}><span aria-hidden="true">{visible}</span><span className="type-cursor" aria-hidden="true" /></h1>
 }
 
 function Slider({ id, value, onChange, low, high }: { id: string; value: number; onChange: (value: number) => void; low?: string; high?: string }) {
@@ -165,12 +222,14 @@ function App() {
   }
 
   return <main>
-    <header className="topbar"><span className="brand">AI Decision Coach</span><span>Step {screen} of 6</span></header>
-    <div className="progress" aria-label={`Step ${screen} of 6`}><span style={{ width: `${screen / 6 * 100}%` }} /></div>
-    <section className="page">
+    <header className="topbar"><span className="brand">AI Decision Coach</span><span className="principle">AI organizes and reflects. You decide.</span><span className="step-count">{String(screen).padStart(2, '0')} / 06</span></header>
+    <div className="app-shell">
+      <JourneyRail current={screen} />
+      <section className={`page screen-${screen}`}>
+      <ThoughtLine step={screen} />
       {screen === 1 && <>
         <p className="eyebrow">Start with what you know</p>
-        <h1>What are you trying to figure out?</h1>
+        <TypewriterHeadline />
         <p className="intro">Put it all here. The context, the options, what's exciting, what's worrying you. It doesn't need to be organized.</p>
         <label htmlFor="brain-dump">Your thoughts</label>
         <textarea id="brain-dump" className="large" placeholder="I've been offered a new role, and I'm trying to decide..." value={journey.brainDump} onChange={(e) => { setJourney({ ...journey, brainDump: e.target.value }); setInterpretationError(false) }} />
@@ -232,7 +291,8 @@ function App() {
         <p className="closing">You don't have to decide right now. But you understand the decision better than when you started.</p>
         <div className="actions"><button className="secondary" onClick={previous}>Previous</button></div>
       </>}
-    </section>
+      </section>
+    </div>
   </main>
 }
 
