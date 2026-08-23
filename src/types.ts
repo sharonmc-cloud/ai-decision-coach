@@ -37,7 +37,7 @@ export interface UpsideExploration {
 
 export interface Synthesis {
   coreTension: string
-  lessScary: string | null
+  lessScary: string
   upside: string
   stillNeedToKnow: string[]
   decisionProbes: string[]

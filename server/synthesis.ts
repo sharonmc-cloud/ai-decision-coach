@@ -20,7 +20,7 @@ export interface SynthesisContext {
 
 export interface DecisionSynthesis {
   coreTension: string
-  lessScary: string | null
+  lessScary: string
   upside: string
   stillNeedToKnow: string[]
   decisionProbes: string[]
@@ -31,7 +31,7 @@ const synthesisSchema = {
   required: ['coreTension', 'lessScary', 'upside', 'stillNeedToKnow', 'decisionProbes'],
   properties: {
     coreTension: { type: 'string' },
-    lessScary: { type: ['string', 'null'] },
+    lessScary: { type: 'string' },
     upside: { type: 'string' },
     stillNeedToKnow: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 3 },
     decisionProbes: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 3 },
@@ -46,7 +46,7 @@ export function validateSynthesis(value: unknown): value is DecisionSynthesis {
   if (!value || typeof value !== 'object') return false
   const item = value as Record<string, unknown>
   return nonEmpty(item.coreTension)
-    && (item.lessScary === null || nonEmpty(item.lessScary))
+    && nonEmpty(item.lessScary)
     && nonEmpty(item.upside)
     && stringArray(item.stillNeedToKnow, 1, 3)
     && stringArray(item.decisionProbes, 2, 3)

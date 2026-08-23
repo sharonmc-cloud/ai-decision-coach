@@ -17,7 +17,7 @@ const initialState: DecisionJourneyState = {
   fearExploration: { likelihood: 5, impact: 5, response: '' },
   selectedPositiveId: null,
   upsideExploration: { outcome: '', meaningfulness: 5, conditions: '' },
-  synthesis: { coreTension: '', lessScary: null, upside: '', stillNeedToKnow: [], decisionProbes: [] },
+  synthesis: { coreTension: '', lessScary: '', upside: '', stillNeedToKnow: [], decisionProbes: [] },
 }
 
 const categoryLabels: Record<ConsiderationCategory, string> = {
@@ -119,7 +119,6 @@ function App() {
     if (synthesisLoading) return
     setSynthesisLoading(true)
     setSynthesisError(false)
-    const highestFear = highest(journey.interpretation.fears)
     const strongestPositive = highest(journey.interpretation.pullingToward)
     const context = {
       brainDump: journey.brainDump,
@@ -135,7 +134,7 @@ function App() {
         category: item.category,
         rating: journey.influenceRatings[item.id] ?? 5,
       })),
-      highestInfluenceFear: highestFear?.text ?? null,
+      highestInfluenceFear: selectedFear?.text ?? null,
       fearExploration: {
         likelihood: journey.fearExploration.likelihood,
         impact: journey.fearExploration.impact,
@@ -225,7 +224,7 @@ function App() {
         <p className="eyebrow">Step back</p><h1>Here's what seems to matter.</h1><p className="intro">A reflection on what you've explored—not a verdict.</p>
         <div className="synthesis">
           <div><h2>The core tension</h2><p>{journey.synthesis.coreTension}</p></div>
-          {journey.synthesis.lessScary && <div><h2>What seems less scary than it did</h2><p>{journey.synthesis.lessScary}</p></div>}
+          <div><h2>What seems less scary than it did</h2><p>{journey.synthesis.lessScary}</p></div>
           <div><h2>The upside you're drawn to</h2><p>{journey.synthesis.upside}</p></div>
           <div><h2>What you still need to know</h2><ul>{journey.synthesis.stillNeedToKnow.map((item) => <li key={item}>{item}</li>)}</ul></div>
         </div>
