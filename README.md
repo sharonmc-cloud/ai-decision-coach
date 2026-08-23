@@ -1,6 +1,6 @@
 # AI Decision Coach
 
-A React + TypeScript prototype for a six-step, human-led decision reflection journey. Milestone 2 uses OpenAI for the initial brain-dump interpretation; the later synthesis and reflection steps intentionally remain mock-driven.
+A React + TypeScript prototype for a six-step, human-led decision reflection journey. Milestone 2 uses OpenAI for the initial brain-dump interpretation and the final synthesis. The fear and upside exploration screens remain deterministic and user-controlled.
 
 ## Run locally
 
@@ -22,7 +22,10 @@ the key is deliberately not prefixed with `VITE_` and is never included in the b
 bundle. Use `npm run build` to typecheck and create a production build, and
 `npm run preview` to preview that build with the same local API middleware.
 
-The OpenAI model is configured in `server/interpretation.ts`, while the neutral
-facilitator instructions live separately in `server/aiInstructions.ts`. Only the
-Screen 1 → Screen 2 interpretation calls OpenAI. This lightweight Vite middleware is
-intended for local prototype development, not as a production hosting architecture.
+The OpenAI model is configured in `server/interpretation.ts`, while both neutral
+facilitator instruction sets live separately in `server/aiInstructions.ts`. Screen 1 →
+Screen 2 performs the structured interpretation call. Continuing from Screen 5 sends
+the current journey context to the structured synthesis endpoint before showing Screen
+6. The example interpretation retained in `src/mockData.ts` is development reference
+only and is replaced before Screen 2 in the normal flow. This lightweight Vite middleware is intended for
+local prototype development, not as a production hosting architecture.

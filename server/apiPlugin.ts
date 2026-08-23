@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Plugin } from 'vite'
 import { loadEnv } from 'vite'
 import { interpretBrainDump } from './interpretation'
+import { synthesizeDecision, type SynthesisContext } from './synthesis'
 
 const MAX_BODY_BYTES = 50_000
 
@@ -39,6 +40,20 @@ export function decisionCoachApiPlugin(): Plugin {
       } catch (error) {
         console.error('Interpretation request failed:', error instanceof Error ? error.message : 'Unknown error')
         return sendJson(response, 500, { error: 'Interpretation unavailable' })
+      }
+    })
+    middlewares.use('/api/synthesize', async (request, response) => {
+      if (request.method !== 'POST') return sendJson(response, 405, { error: 'Method not allowed' })
+      try {
+        const body = await readJson(request) as { context?: SynthesisContext }
+        if (!body.context || typeof body.context.brainDump !== 'string' || !body.context.brainDump.trim()) {
+          return sendJson(response, 400, { error: 'Decision context is required' })
+        }
+        if (!apiKey) throw new Error('OPENAI_API_KEY is not configured')
+        return sendJson(response, 200, await synthesizeDecision(body.context, apiKey))
+      } catch (error) {
+        console.error('Synthesis request failed:', error instanceof Error ? error.message : 'Unknown error')
+        return sendJson(response, 500, { error: 'Synthesis unavailable' })
       }
     })
   }

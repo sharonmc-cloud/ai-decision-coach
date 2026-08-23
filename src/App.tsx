@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { mockInterpretation, mockSynthesis } from './mockData'
+import { mockInterpretation } from './mockData'
 import type { AIInterpretation, Consideration, ConsiderationCategory, DecisionJourneyState, Interpretation } from './types'
 
 const allMockItems = [
@@ -17,7 +17,7 @@ const initialState: DecisionJourneyState = {
   fearExploration: { likelihood: 5, impact: 5, response: '' },
   selectedPositiveId: null,
   upsideExploration: { outcome: '', meaningfulness: 5, conditions: '' },
-  synthesis: mockSynthesis,
+  synthesis: { coreTension: '', lessScary: null, upside: '', stillNeedToKnow: [], decisionProbes: [] },
 }
 
 const categoryLabels: Record<ConsiderationCategory, string> = {
@@ -39,6 +39,8 @@ function App() {
   const [newItem, setNewItem] = useState('')
   const [loading, setLoading] = useState(false)
   const [interpretationError, setInterpretationError] = useState(false)
+  const [synthesisLoading, setSynthesisLoading] = useState(false)
+  const [synthesisError, setSynthesisError] = useState(false)
 
   const considerations = useMemo(() => [
     ...journey.interpretation.pullingToward,
@@ -113,6 +115,56 @@ function App() {
   const selectedFear = journey.interpretation.fears.find((item) => item.id === journey.selectedFearId) ?? highest(journey.interpretation.fears)
   const selectedPositive = journey.interpretation.pullingToward.find((item) => item.id === journey.selectedPositiveId) ?? highest(journey.interpretation.pullingToward)
 
+  const generateSynthesis = async () => {
+    if (synthesisLoading) return
+    setSynthesisLoading(true)
+    setSynthesisError(false)
+    const highestFear = highest(journey.interpretation.fears)
+    const strongestPositive = highest(journey.interpretation.pullingToward)
+    const context = {
+      brainDump: journey.brainDump,
+      interpretation: {
+        decision: journey.interpretation.decision,
+        pullingToward: journey.interpretation.pullingToward.map((item) => item.text),
+        holdingBack: journey.interpretation.holdingBack.map((item) => item.text),
+        fears: journey.interpretation.fears.map((item) => item.text),
+      },
+      userAddedConsiderations: journey.addedConsiderations.map((item) => item.text),
+      influenceRatings: considerations.map((item) => ({
+        consideration: item.text,
+        category: item.category,
+        rating: journey.influenceRatings[item.id] ?? 5,
+      })),
+      highestInfluenceFear: highestFear?.text ?? null,
+      fearExploration: {
+        likelihood: journey.fearExploration.likelihood,
+        impact: journey.fearExploration.impact,
+        reflection: journey.fearExploration.response,
+      },
+      strongestPositiveDriver: strongestPositive?.text ?? null,
+      positiveExploration: {
+        outcome: journey.upsideExploration.outcome,
+        meaningfulness: journey.upsideExploration.meaningfulness,
+        conditions: journey.upsideExploration.conditions,
+      },
+    }
+    try {
+      const response = await fetch('/api/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context }),
+      })
+      if (!response.ok) throw new Error('Synthesis request failed')
+      const synthesis = await response.json()
+      setJourney((current) => ({ ...current, synthesis }))
+      next()
+    } catch {
+      setSynthesisError(true)
+    } finally {
+      setSynthesisLoading(false)
+    }
+  }
+
   return <main>
     <header className="topbar"><span className="brand">AI Decision Coach</span><span>Step {screen} of 6</span></header>
     <div className="progress" aria-label={`Step ${screen} of 6`}><span style={{ width: `${screen / 6 * 100}%` }} /></div>
@@ -165,18 +217,19 @@ function App() {
         <div className="field"><label htmlFor="outcome">What happened?</label><textarea id="outcome" value={journey.upsideExploration.outcome} onChange={(e) => setJourney({ ...journey, upsideExploration: { ...journey.upsideExploration, outcome: e.target.value } })} /></div>
         <div className="field"><label htmlFor="meaning">How meaningful would that outcome be?</label><Slider id="meaning" low="Nice" high="Transformative" value={journey.upsideExploration.meaningfulness} onChange={(value) => setJourney({ ...journey, upsideExploration: { ...journey.upsideExploration, meaningfulness: value } })} /></div>
         <div className="field"><label htmlFor="conditions">What would need to be true for this outcome to happen?</label><textarea id="conditions" value={journey.upsideExploration.conditions} onChange={(e) => setJourney({ ...journey, upsideExploration: { ...journey.upsideExploration, conditions: e.target.value } })} /></div></>}
-        <div className="actions"><button className="secondary" onClick={previous}>Previous</button><button className="primary" onClick={() => next()}>Continue →</button></div>
+        {synthesisError && <div className="error-message" role="alert"><strong>We couldn't reflect that back just yet.</strong> Everything you've shared is still here—try again.</div>}
+        <div className="actions"><button className="secondary" disabled={synthesisLoading} onClick={previous}>Previous</button><button className="primary" disabled={synthesisLoading} onClick={generateSynthesis}>{synthesisLoading ? 'Reflecting on your decision…' : synthesisError ? 'Retry →' : 'Continue →'}</button></div>
       </>}
 
       {screen === 6 && <>
         <p className="eyebrow">Step back</p><h1>Here's what seems to matter.</h1><p className="intro">A reflection on what you've explored—not a verdict.</p>
         <div className="synthesis">
           <div><h2>The core tension</h2><p>{journey.synthesis.coreTension}</p></div>
-          <div><h2>What seems less scary than it did</h2><p>{journey.synthesis.lessScary}</p></div>
+          {journey.synthesis.lessScary && <div><h2>What seems less scary than it did</h2><p>{journey.synthesis.lessScary}</p></div>}
           <div><h2>The upside you're drawn to</h2><p>{journey.synthesis.upside}</p></div>
-          <div><h2>What you still need to know</h2><p>{journey.synthesis.unknown}</p></div>
+          <div><h2>What you still need to know</h2><ul>{journey.synthesis.stillNeedToKnow.map((item) => <li key={item}>{item}</li>)}</ul></div>
         </div>
-        <div className="questions"><h2>Questions worth sitting with</h2><ul>{journey.synthesis.questions.map((question) => <li key={question}>{question}</li>)}</ul></div>
+        <div className="questions"><h2>Questions worth sitting with</h2><ul>{journey.synthesis.decisionProbes.map((question) => <li key={question}>{question}</li>)}</ul></div>
         <p className="closing">You don't have to decide right now. But you understand the decision better than when you started.</p>
         <div className="actions"><button className="secondary" onClick={previous}>Previous</button></div>
       </>}

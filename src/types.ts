@@ -37,10 +37,10 @@ export interface UpsideExploration {
 
 export interface Synthesis {
   coreTension: string
-  lessScary: string
+  lessScary: string | null
   upside: string
-  unknown: string
-  questions: string[]
+  stillNeedToKnow: string[]
+  decisionProbes: string[]
 }
 
 export interface DecisionJourneyState {
