@@ -189,7 +189,7 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .card { min-height: 270px; padding: 22px 25px 28px 0; border-bottom: 1px solid var(--ink); border-radius: 0; background: transparent; }
 .card + .card { padding-left: 25px; border-left: 1px solid var(--ink); }
 .card ul { margin: 26px 0 0; padding: 0; list-style: none; }
-.card li { margin: 0; padding: 13px 0; border-top: 1px solid var(--rule); font-family: var(--display); font-size: 1.35rem; line-height: 1.16; }
+.card li { margin: 0; padding: 13px 0; border-top: 1px solid var(--rule); font-family: Arial, Helvetica, sans-serif; font-size: 1.35rem; line-height: 1.16; }
 .card.added { min-height: 0; margin-top: 28px; padding: 24px 0; border-top: 1px solid var(--ink); }
 .card.added li { max-width: 800px; }
 .add-section { margin-top: 82px; padding-top: 24px; border-top: 1px solid var(--ink); }
@@ -201,21 +201,21 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 
 .rating-list { margin-top: 72px; border-top: 1px solid var(--ink); }
 .rating { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 36%); align-items: center; gap: 55px; padding: 29px 0; border-bottom: 1px solid var(--ink); }
-.rating label { margin: 9px 0 0; font-family: var(--display); font-size: 1.45rem; line-height: 1.15; text-transform: none; letter-spacing: -.01em; }
+.rating label { margin: 9px 0 0; font-family: Arial, Helvetica, sans-serif; font-size: 1.45rem; line-height: 1.15; text-transform: none; letter-spacing: -.01em; }
 input[type="range"] { width: 100%; accent-color: var(--ink); }
 .slider-labels { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 9px; color: var(--quiet); font-size: .58rem; text-transform: uppercase; letter-spacing: .07em; }
 .slider-labels span:last-child { text-align: right; }
 .slider-labels strong { color: var(--ink); font-family: var(--display); font-size: 1.6rem; font-weight: 400; }
 
 .focus { max-width: 800px; margin: 58px 0 72px; padding: 20px 0 22px; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
-.focus strong { display: block; max-width: 680px; margin-top: 25px; font-family: var(--display); font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1.02; font-weight: 400; }
+.focus strong { display: block; max-width: 680px; margin-top: 25px; font-family: Arial, Helvetica, sans-serif; font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1.02; font-weight: 400; }
 .field { max-width: 800px; margin: 58px 0; }
 .scenario { max-width: 740px; margin: 58px 0; font-family: var(--display); font-size: clamp(1.75rem, 3vw, 2.8rem); line-height: 1.08; }
 
 .synthesis { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 72px; border-top: 1px solid var(--ink); }
 .synthesis > div { min-height: 255px; padding: 25px 35px 30px 0; border-bottom: 1px solid var(--ink); }
 .synthesis > div:nth-child(even) { padding-left: 35px; border-left: 1px solid var(--ink); }
-.synthesis p, .synthesis li { margin-bottom: 0; font-family: var(--display); font-size: 1.45rem; line-height: 1.25; }
+.synthesis p, .synthesis li { margin-bottom: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1.45rem; line-height: 1.25; }
 .synthesis ul { padding-left: 22px; }
 .questions { margin-top: 76px; padding: 26px 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
 .questions ul { margin: 28px 0 0; padding: 0; list-style: none; counter-reset: probes; }
