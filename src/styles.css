@@ -56,3 +56,10 @@ input[type="range"] { width: 100%; accent-color: #315f4d; }
 .questions li { margin: 17px 0; line-height: 1.5; }
 .closing { margin: 48px auto 0; max-width: 630px; text-align: center; font-family: Georgia, serif; font-size: 1.45rem; }
 @media (max-width: 650px) { .page { padding-top: 48px; } .groups, .synthesis { grid-template-columns: 1fr; } .rating { grid-template-columns: 1fr; gap: 14px; } .topbar { padding-inline: 20px; } }
+.error-message {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-left: 3px solid #a4554a;
+  background: #fff4f1;
+  color: #63332d;
+}

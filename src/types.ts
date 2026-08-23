@@ -15,6 +15,14 @@ export interface Interpretation {
   followUpPrompts: string[]
 }
 
+export interface AIInterpretation {
+  decision: { optionA: string; optionB: string }
+  pullingToward: string[]
+  holdingBack: string[]
+  fears: string[]
+  followUpPrompts: string[]
+}
+
 export interface FearExploration {
   likelihood: number
   impact: number
@@ -31,8 +39,8 @@ export interface Synthesis {
   coreTension: string
   lessScary: string
   upside: string
-  unknown: string
-  questions: string[]
+  stillNeedToKnow: string[]
+  decisionProbes: string[]
 }
 
 export interface DecisionJourneyState {

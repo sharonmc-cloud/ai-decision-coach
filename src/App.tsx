@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { mockInterpretation, mockSynthesis } from './mockData'
-import type { Consideration, ConsiderationCategory, DecisionJourneyState } from './types'
+import { mockInterpretation } from './mockData'
+import type { AIInterpretation, Consideration, ConsiderationCategory, DecisionJourneyState, Interpretation } from './types'
 
 const allMockItems = [
   ...mockInterpretation.pullingToward,
@@ -17,7 +17,7 @@ const initialState: DecisionJourneyState = {
   fearExploration: { likelihood: 5, impact: 5, response: '' },
   selectedPositiveId: null,
   upsideExploration: { outcome: '', meaningfulness: 5, conditions: '' },
-  synthesis: mockSynthesis,
+  synthesis: { coreTension: '', lessScary: '', upside: '', stillNeedToKnow: [], decisionProbes: [] },
 }
 
 const categoryLabels: Record<ConsiderationCategory, string> = {
@@ -38,10 +38,18 @@ function App() {
   const [journey, setJourney] = useState(initialState)
   const [newItem, setNewItem] = useState('')
   const [loading, setLoading] = useState(false)
+  const [interpretationError, setInterpretationError] = useState(false)
+  const [synthesisLoading, setSynthesisLoading] = useState(false)
+  const [synthesisError, setSynthesisError] = useState(false)
 
-  const considerations = useMemo(() => [...allMockItems, ...journey.addedConsiderations], [journey.addedConsiderations])
-  const highest = (items: Consideration[]) => items.reduce((best, item) =>
-    (journey.influenceRatings[item.id] ?? 5) > (journey.influenceRatings[best.id] ?? 5) ? item : best, items[0])
+  const considerations = useMemo(() => [
+    ...journey.interpretation.pullingToward,
+    ...journey.interpretation.holdingBack,
+    ...journey.interpretation.fears,
+    ...journey.addedConsiderations,
+  ], [journey.interpretation, journey.addedConsiderations])
+  const highest = (items: Consideration[]) => items.length ? items.reduce((best, item) =>
+    (journey.influenceRatings[item.id] ?? 5) > (journey.influenceRatings[best.id] ?? 5) ? item : best, items[0]) : undefined
 
   const next = (prepare?: () => void) => {
     prepare?.()
@@ -49,9 +57,41 @@ function App() {
     window.scrollTo(0, 0)
   }
   const previous = () => { setScreen((current) => Math.max(1, current - 1)); window.scrollTo(0, 0) }
-  const interpret = () => {
+  const interpret = async () => {
+    if (loading) return
     setLoading(true)
-    window.setTimeout(() => { setLoading(false); next() }, 650)
+    setInterpretationError(false)
+    try {
+      const response = await fetch('/api/interpret', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brainDump: journey.brainDump }),
+      })
+      if (!response.ok) throw new Error('Interpretation request failed')
+      const result = await response.json() as AIInterpretation
+      const makeItems = (items: string[], category: ConsiderationCategory): Consideration[] =>
+        items.map((text, index) => ({ id: `ai-${category}-${index}`, text, category, source: 'ai' }))
+      const interpretation: Interpretation = {
+        decision: result.decision,
+        pullingToward: makeItems(result.pullingToward, 'pullingToward'),
+        holdingBack: makeItems(result.holdingBack, 'holdingBack'),
+        fears: makeItems(result.fears, 'fears'),
+        followUpPrompts: result.followUpPrompts,
+      }
+      const aiItems = [...interpretation.pullingToward, ...interpretation.holdingBack, ...interpretation.fears]
+      setJourney((current) => ({
+        ...current,
+        interpretation,
+        influenceRatings: Object.fromEntries(aiItems.map((item) => [item.id, 5])),
+        selectedFearId: null,
+        selectedPositiveId: null,
+      }))
+      next()
+    } catch {
+      setInterpretationError(true)
+    } finally {
+      setLoading(false)
+    }
   }
   const addConsideration = () => {
     const text = newItem.trim()
@@ -66,14 +106,63 @@ function App() {
   }
   const selectFear = () => {
     const fear = highest(journey.interpretation.fears)
-    setJourney((current) => ({ ...current, selectedFearId: fear.id }))
+    setJourney((current) => ({ ...current, selectedFearId: fear?.id ?? null }))
   }
   const selectPositive = () => {
     const positive = highest(journey.interpretation.pullingToward)
-    setJourney((current) => ({ ...current, selectedPositiveId: positive.id }))
+    setJourney((current) => ({ ...current, selectedPositiveId: positive?.id ?? null }))
   }
   const selectedFear = journey.interpretation.fears.find((item) => item.id === journey.selectedFearId) ?? highest(journey.interpretation.fears)
   const selectedPositive = journey.interpretation.pullingToward.find((item) => item.id === journey.selectedPositiveId) ?? highest(journey.interpretation.pullingToward)
+
+  const generateSynthesis = async () => {
+    if (synthesisLoading) return
+    setSynthesisLoading(true)
+    setSynthesisError(false)
+    const strongestPositive = highest(journey.interpretation.pullingToward)
+    const context = {
+      brainDump: journey.brainDump,
+      interpretation: {
+        decision: journey.interpretation.decision,
+        pullingToward: journey.interpretation.pullingToward.map((item) => item.text),
+        holdingBack: journey.interpretation.holdingBack.map((item) => item.text),
+        fears: journey.interpretation.fears.map((item) => item.text),
+      },
+      userAddedConsiderations: journey.addedConsiderations.map((item) => item.text),
+      influenceRatings: considerations.map((item) => ({
+        consideration: item.text,
+        category: item.category,
+        rating: journey.influenceRatings[item.id] ?? 5,
+      })),
+      highestInfluenceFear: selectedFear?.text ?? null,
+      fearExploration: {
+        likelihood: journey.fearExploration.likelihood,
+        impact: journey.fearExploration.impact,
+        reflection: journey.fearExploration.response,
+      },
+      strongestPositiveDriver: strongestPositive?.text ?? null,
+      positiveExploration: {
+        outcome: journey.upsideExploration.outcome,
+        meaningfulness: journey.upsideExploration.meaningfulness,
+        conditions: journey.upsideExploration.conditions,
+      },
+    }
+    try {
+      const response = await fetch('/api/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context }),
+      })
+      if (!response.ok) throw new Error('Synthesis request failed')
+      const synthesis = await response.json()
+      setJourney((current) => ({ ...current, synthesis }))
+      next()
+    } catch {
+      setSynthesisError(true)
+    } finally {
+      setSynthesisLoading(false)
+    }
+  }
 
   return <main>
     <header className="topbar"><span className="brand">AI Decision Coach</span><span>Step {screen} of 6</span></header>
@@ -84,8 +173,9 @@ function App() {
         <h1>What are you trying to figure out?</h1>
         <p className="intro">Put it all here. The context, the options, what's exciting, what's worrying you. It doesn't need to be organized.</p>
         <label htmlFor="brain-dump">Your thoughts</label>
-        <textarea id="brain-dump" className="large" placeholder="I've been offered a new role, and I'm trying to decide..." value={journey.brainDump} onChange={(e) => setJourney({ ...journey, brainDump: e.target.value })} />
-        <div className="actions end"><button className="primary" disabled={!journey.brainDump.trim() || loading} onClick={interpret}>{loading ? 'Organizing your thoughts…' : 'Help me untangle this →'}</button></div>
+        <textarea id="brain-dump" className="large" placeholder="I've been offered a new role, and I'm trying to decide..." value={journey.brainDump} onChange={(e) => { setJourney({ ...journey, brainDump: e.target.value }); setInterpretationError(false) }} />
+        {interpretationError && <div className="error-message" role="alert"><strong>We couldn't untangle that just yet.</strong> Your thoughts are still here—try again.</div>}
+        <div className="actions end"><button className="primary" disabled={!journey.brainDump.trim() || loading} onClick={interpret}>{loading ? 'Organizing your thoughts…' : interpretationError ? 'Retry →' : 'Help me untangle this →'}</button></div>
       </>}
 
       {screen === 2 && <>
@@ -110,21 +200,24 @@ function App() {
       </>}
 
       {screen === 4 && <>
-        <p className="eyebrow">Look closer</p><h1>Let's look at what you're afraid of.</h1><div className="focus"><span>The fear with the most influence</span><strong>{selectedFear.text}</strong></div>
+        <p className="eyebrow">Look closer</p><h1>Let's look at what you're afraid of.</h1>{selectedFear ? <div className="focus"><span>The fear with the most influence</span><strong>{selectedFear.text}</strong></div> : <p className="intro">You didn't identify a specific fear, so there's nothing to rate here.</p>}
+        {selectedFear && <>
         <div className="field"><label htmlFor="fear-likelihood">How likely does this feel?</label><Slider id="fear-likelihood" low="Very unlikely" high="Very likely" value={journey.fearExploration.likelihood} onChange={(value) => setJourney({ ...journey, fearExploration: { ...journey.fearExploration, likelihood: value } })} /></div>
         <div className="field"><label htmlFor="fear-impact">If it happened, how difficult would it actually be?</label><Slider id="fear-impact" low="Manageable" high="Very difficult" value={journey.fearExploration.impact} onChange={(value) => setJourney({ ...journey, fearExploration: { ...journey.fearExploration, impact: value } })} /></div>
-        <div className="field"><label htmlFor="fear-response">If that happened, what options would you still have?</label><textarea id="fear-response" value={journey.fearExploration.response} onChange={(e) => setJourney({ ...journey, fearExploration: { ...journey.fearExploration, response: e.target.value } })} /></div>
+        <div className="field"><label htmlFor="fear-response">If that happened, what options would you still have?</label><textarea id="fear-response" value={journey.fearExploration.response} onChange={(e) => setJourney({ ...journey, fearExploration: { ...journey.fearExploration, response: e.target.value } })} /></div></>}
         <div className="actions"><button className="secondary" onClick={previous}>Previous</button><button className="primary" onClick={() => next(selectPositive)}>Continue →</button></div>
       </>}
 
       {screen === 5 && <>
         <p className="eyebrow">Make room for possibility</p><h1>Now imagine it goes really well.</h1><p className="intro">You've spent some time thinking about what could go wrong. Let's give the best outcome the same attention.</p>
-        <div className="focus positive"><span>Your strongest positive driver</span><strong>{selectedPositive.text}</strong></div>
+        {selectedPositive ? <div className="focus positive"><span>Your strongest positive driver</span><strong>{selectedPositive.text}</strong></div> : <p className="intro">You didn't identify a specific positive driver, so there's nothing to explore here.</p>}
+        {selectedPositive && <>
         <p className="scenario">Imagine you choose this path and a year from now you're genuinely glad you did.</p>
         <div className="field"><label htmlFor="outcome">What happened?</label><textarea id="outcome" value={journey.upsideExploration.outcome} onChange={(e) => setJourney({ ...journey, upsideExploration: { ...journey.upsideExploration, outcome: e.target.value } })} /></div>
         <div className="field"><label htmlFor="meaning">How meaningful would that outcome be?</label><Slider id="meaning" low="Nice" high="Transformative" value={journey.upsideExploration.meaningfulness} onChange={(value) => setJourney({ ...journey, upsideExploration: { ...journey.upsideExploration, meaningfulness: value } })} /></div>
-        <div className="field"><label htmlFor="conditions">What would need to be true for this outcome to happen?</label><textarea id="conditions" value={journey.upsideExploration.conditions} onChange={(e) => setJourney({ ...journey, upsideExploration: { ...journey.upsideExploration, conditions: e.target.value } })} /></div>
-        <div className="actions"><button className="secondary" onClick={previous}>Previous</button><button className="primary" onClick={() => next()}>Continue →</button></div>
+        <div className="field"><label htmlFor="conditions">What would need to be true for this outcome to happen?</label><textarea id="conditions" value={journey.upsideExploration.conditions} onChange={(e) => setJourney({ ...journey, upsideExploration: { ...journey.upsideExploration, conditions: e.target.value } })} /></div></>}
+        {synthesisError && <div className="error-message" role="alert"><strong>We couldn't reflect that back just yet.</strong> Everything you've shared is still here—try again.</div>}
+        <div className="actions"><button className="secondary" disabled={synthesisLoading} onClick={previous}>Previous</button><button className="primary" disabled={synthesisLoading} onClick={generateSynthesis}>{synthesisLoading ? 'Reflecting on your decision…' : synthesisError ? 'Retry →' : 'Continue →'}</button></div>
       </>}
 
       {screen === 6 && <>
@@ -133,9 +226,9 @@ function App() {
           <div><h2>The core tension</h2><p>{journey.synthesis.coreTension}</p></div>
           <div><h2>What seems less scary than it did</h2><p>{journey.synthesis.lessScary}</p></div>
           <div><h2>The upside you're drawn to</h2><p>{journey.synthesis.upside}</p></div>
-          <div><h2>What you still need to know</h2><p>{journey.synthesis.unknown}</p></div>
+          <div><h2>What you still need to know</h2><ul>{journey.synthesis.stillNeedToKnow.map((item) => <li key={item}>{item}</li>)}</ul></div>
         </div>
-        <div className="questions"><h2>Questions worth sitting with</h2><ul>{journey.synthesis.questions.map((question) => <li key={question}>{question}</li>)}</ul></div>
+        <div className="questions"><h2>Questions worth sitting with</h2><ul>{journey.synthesis.decisionProbes.map((question) => <li key={question}>{question}</li>)}</ul></div>
         <p className="closing">You don't have to decide right now. But you understand the decision better than when you started.</p>
         <div className="actions"><button className="secondary" onClick={previous}>Previous</button></div>
       </>}

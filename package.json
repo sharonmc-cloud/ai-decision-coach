@@ -10,12 +10,14 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
+    "openai": "latest",
     "vite": "latest",
     "typescript": "latest",
     "react": "latest",
     "react-dom": "latest"
   },
   "devDependencies": {
+    "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest"
   }

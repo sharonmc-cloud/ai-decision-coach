@@ -1,4 +1,4 @@
-import type { Interpretation, Synthesis } from './types'
+import type { Interpretation } from './types'
 
 export const mockInterpretation: Interpretation = {
   decision: { optionA: 'Take the job', optionB: 'Keep looking' },
@@ -20,17 +20,5 @@ export const mockInterpretation: Interpretation = {
     'What would you be giving up by saying yes?',
     'How important are the people and culture in this decision?',
     "Is there anything you're excited about but haven't mentioned yet?",
-  ],
-}
-
-export const mockSynthesis: Synthesis = {
-  coreTension: 'Getting momentum now vs. holding out for something that better meets your standards.',
-  lessScary: 'A better opportunity appearing afterward still matters, but accepting this opportunity would not eliminate every future option.',
-  upside: 'The meaningful upside is gaining experience that could expand your future career options.',
-  unknown: 'How much direct ownership would you actually have over the AI product?',
-  questions: [
-    'If the compensation changed, would this become an easy yes?',
-    "If this weren't an AI role, would you still want it?",
-    'What would you regret more six months from now: taking an imperfect opportunity or never finding out where it could lead?',
   ],
 }
