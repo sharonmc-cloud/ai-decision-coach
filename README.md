@@ -27,5 +27,17 @@ facilitator instruction sets live separately in `server/aiInstructions.ts`. Scre
 Screen 2 performs the structured interpretation call. Continuing from Screen 5 sends
 the current journey context to the structured synthesis endpoint before showing Screen
 6. The example interpretation retained in `src/mockData.ts` is development reference
-only and is replaced before Screen 2 in the normal flow. This lightweight Vite middleware is intended for
-local prototype development, not as a production hosting architecture.
+only and is replaced before Screen 2 in the normal flow.
+
+## Deploy to Vercel
+
+The production API routes are Vercel functions in `api/interpret.ts` and
+`api/synthesize.ts`. They and the local Vite middleware are thin adapters around the
+same handlers in `server/apiHandlers.ts`, so request validation, OpenAI behavior, and
+safe public errors stay aligned between environments.
+
+Import the repository into Vercel as a Vite project and add `OPENAI_API_KEY` in the
+Vercel project's Environment Variables settings for each intended environment. Do not
+prefix the variable with `VITE_`: it must remain available only to server functions.
+Vercel will build the frontend into `dist` and deploy the files under `api` as the
+same-origin `POST /api/interpret` and `POST /api/synthesize` functions.
