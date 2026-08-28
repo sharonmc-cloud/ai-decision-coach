@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { handleSynthesisRequest } from '../server/apiHandlers'
-import { readVercelJson, sendJson } from '../server/http'
+import { handleSynthesisRequest } from '../server/apiHandlers.js'
+import { readVercelJson, sendJson } from '../server/http.js'
 
 type VercelRequest = IncomingMessage & { body?: unknown }
 

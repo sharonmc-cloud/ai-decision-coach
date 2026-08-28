@@ -1,5 +1,5 @@
 import OpenAI from 'openai'
-import { DECISION_COACH_INSTRUCTIONS } from './aiInstructions'
+import { DECISION_COACH_INSTRUCTIONS } from './aiInstructions.js'
 
 export const INTERPRETATION_MODEL = 'gpt-5-mini'
 

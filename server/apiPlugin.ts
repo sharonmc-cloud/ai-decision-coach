@@ -1,8 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Plugin } from 'vite'
 import { loadEnv } from 'vite'
-import { handleInterpretRequest, handleSynthesisRequest } from './apiHandlers'
-import { readJson, sendJson } from './http'
+import { handleInterpretRequest, handleSynthesisRequest } from './apiHandlers.js'
+import { readJson, sendJson } from './http.js'
 
 export function decisionCoachApiPlugin(): Plugin {
   const attach = (middlewares: { use: (path: string, handler: (request: IncomingMessage, response: ServerResponse) => void) => void }, mode: string) => {
