@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
-import { SYNTHESIS_INSTRUCTIONS } from './aiInstructions'
-import { INTERPRETATION_MODEL } from './interpretation'
+import { SYNTHESIS_INSTRUCTIONS } from './aiInstructions.js'
+import { INTERPRETATION_MODEL } from './interpretation.js'
 
 export interface SynthesisContext {
   brainDump: string

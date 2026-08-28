@@ -1,5 +1,5 @@
-import { interpretBrainDump } from './interpretation'
-import { synthesizeDecision, type SynthesisContext } from './synthesis'
+import { interpretBrainDump } from './interpretation.js'
+import { synthesizeDecision, type SynthesisContext } from './synthesis.js'
 
 export interface ApiResult {
   status: number
